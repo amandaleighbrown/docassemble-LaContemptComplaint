@@ -1,0 +1,399 @@
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  #- docassemble.ALLouisianaSC:custom_organization.yml
+  - docassemble.MassAccess:massaccess.yml
+---
+metadata:
+  title: |
+    Complaint for Contempt
+  short title: |
+    Complaint for Contempt
+  tags:
+    - Other
+  authors:
+    - Quinten Steenhuis
+---
+mandatory: True
+comment: |
+  Global interview metadata
+variable name: interview_metadata["la_contempt_complaint"]
+data:
+  al_weaver_version: "1.6.3"
+  generated on: "2022-05-27"
+  title: >-
+    Complaint for Contempt
+  short title: >-
+    Complaint for Contempt
+  description: |-
+    This form is intended for litigants who wish to have another person held accountable for violating a previous judgment or order of the court.
+  original_form: >-
+    https://www.lsba.org/documents/ATJPublicResources/SRLRuleForContempt2021.pdf
+  allowed courts:
+    - District Court
+  categories:
+    - "contempt"
+  typical role: "unknown"
+  generate download screen: True
+---
+code: |
+  interview_metadata['main_interview_key'] =  'la_contempt_complaint'
+---
+code: |
+  # This controls the default country and list of states in address field questions
+  AL_DEFAULT_COUNTRY = "US"
+---
+code: |
+  # This controls the default state in address field questions
+  AL_DEFAULT_STATE = "LA"
+---
+code: |
+  github_repo_name =  'docassemble-LaContemptComplaint'
+---
+code: |
+  interview_short_title = "Ask the judge to find the opposing party in contempt"
+---
+code: |
+  al_form_type = "existing_case" 
+---
+objects:
+  - users: ALPeopleList.using(there_are_any=True)
+  - other_parties: ALPeopleList.using(there_are_any=True)
+---
+sections:
+  - review_la_contempt_complaint: Review your answers
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic for questions specific to this form
+id: interview_order_la_contempt_complaint
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = interview_metadata["la_contempt_complaint"]["allowed courts"]
+  nav.set_section('review_la_contempt_complaint')
+  # Below sets the user_role by asking a question.
+  # You can set user_role directly instead to either 'plaintiff' or 'defendant'
+  users.gather()
+  user_ask_role
+  other_parties.gather()
+  petitioners.gather()
+  defendants.gather()
+  decision_date
+  contempt_basis  
+  set_progress(12)
+  docket_number
+  set_progress(25)  
+  set_parts(subtitle=str(users))
+  set_progress(37)
+  users[0].address.address
+  other_parties[0].address.address
+  set_progress(50)
+  set_progress(62)
+  set_progress(75)
+  trial_court.division
+  trial_court
+  trial_court.address.address
+  users[0].phone_number
+  other_parties[0].phone_number  
+  interview_order_la_contempt_complaint = True
+---
+###################### Main order ######################
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+mandatory: True
+code: |
+  al_intro_screen
+  la_contempt_complaint_intro
+  interview_order_la_contempt_complaint
+  signature_date    
+  # Save anonymized interview statistics (customize the saved data below)
+  store_variables_snapshot(data={'zip': users[0].address.zip})    
+  la_contempt_complaint_preview_question
+  basic_questions_signature_flow    
+  la_contempt_complaint_download
+---
+comment: |
+  This question is used to introduce your interview. Please customize
+id: Complaint_for_Contempt
+continue button field: la_contempt_complaint_intro
+question: |
+  Complaint for Contempt
+subquestion: |
+  This form is intended for litigants who wish to have another person held accountable for violating a previous judgment or order of the court.
+  
+  Information you will need:
+  
+  1. The docket number of the case this Rule for Contempt is
+  related to.
+  2. The exact name and address of the other party in this matter
+  that you will need to serve (or the other party’s counsel).
+---
+id: Information about the decision
+question: |
+  Information about the decision
+subquestion: |
+  What order did the judge make that the opposing party violated?
+fields:
+  - "Summarize the order that the judge made:": decision_contents
+    input type: area
+  - "Date of decision": decision_date
+    datatype: date
+
+---
+id: How did the other party violate the order
+question: |
+  How did ${ other_parties.familiar() } violate the order?
+fields:
+  - "Explain how ${ other_parties.familiar() } violated the judge's order": contempt_basis
+    input type: area
+    label above field: True
+---
+id: docket number
+question: |
+  What is your case number?
+fields: 
+  - Case number: docket_number
+---
+id: preview la_contempt_complaint
+question: |
+  Preview your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page.   
+  
+  ${ al_court_bundle.as_pdf(key='preview') }
+
+  Click the image to open it in a new tab. Click the "Edit answers" button
+  to edit your answers.
+
+  ${ action_button_html(url_action('review_la_contempt_complaint'), label='Edit answers', color='info') }
+  
+  Remember to come back to this window to continue and sign your form.
+continue button field: la_contempt_complaint_preview_question    
+---
+code: |
+  signature_fields = ["users[0].signature"]
+---
+code: |
+  # This is a placeholder for the addresses that will be searched
+  # for matching address to court. Edit if court venue is based on 
+  # a different address than the user's
+  addresses_to_search = [user.address for user in users]
+---
+id: la contempt complaint review screen
+event: review_la_contempt_complaint
+question: |
+  Review your answers
+review:
+  - Edit: decision_date
+    button: |
+      **Date of decision**:
+      ${ decision_date }
+  - Edit: decision_contents
+    button: |
+      **Decision summary**:
+      > ${ single_paragraph(decision_contents) }
+  - Edit: contempt_basis
+    button: |
+      **Reason**:
+      > ${ single_paragraph(contempt_basis) }
+  - Edit: petitioners.revisit
+    button: |
+      **Petitioners**
+
+      % for item in petitioners:
+        * ${ item }
+      % endfor
+  - Edit: docket_number
+    button: |
+      **docket_number**:
+      ${ docket_number }
+  - Edit: trial_court
+    button: |
+      **trial_court**
+
+      % if defined("trial_court.division"):
+      * division: ${ trial_court.division }
+      % endif
+      % if defined("trial_court.name.first"):
+      * name: ${ trial_court.name.full() }
+      % endif
+      % if defined("trial_court.address.county"):
+      * address: ${ trial_court.address.block() }
+      % endif
+  - Edit: defendants.revisit
+    button: |
+      **Defendants**
+
+      % for item in defendants:
+        * ${ item }
+      % endfor
+  - Edit: users.revisit
+    button: |
+      **Users**
+
+      % for item in users:
+        * ${ item }
+      % endfor
+  - Edit: other_parties.revisit
+    button: |
+      **Other parties**
+
+      % for item in other_parties:
+        * ${ item }
+      % endfor
+---
+continue button field: petitioners.revisit
+question: |
+  Edit petitioners
+subquestion: |
+  ${ petitioners.table }
+
+  ${ petitioners.add_action() }
+---
+table: petitioners.table
+rows: petitioners
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: defendants.revisit
+question: |
+  Edit defendants
+subquestion: |
+  ${ defendants.table }
+
+  ${ defendants.add_action() }
+---
+table: defendants.table
+rows: defendants
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: users.revisit
+question: |
+  Edit users
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.address") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+edit:
+  - name.first
+  - address.address
+  - phone_number
+confirm: True
+
+---
+continue button field: other_parties.revisit
+question: |
+  Edit other_parties
+subquestion: |
+  ${ other_parties.table }
+
+  ${ other_parties.add_action() }
+---
+table: other_parties.table
+rows: other_parties
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.address") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+edit:
+  - name.first
+  - address.address
+  - phone_number
+confirm: True
+
+---
+id: download la_contempt_complaint
+event: la_contempt_complaint_download
+question: |
+  All done
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Edit answers" button to fix any mistakes.
+
+  ${ action_button_html(url_action('review_la_contempt_complaint'), label='Edit answers', color='info') }
+  
+  
+  ${ al_user_bundle.download_list_html() }
+  
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+progress: 100
+---
+objects:
+  - la_contempt_complaint_post_interview_instructions: ALDocument.using(title="Instructions", filename="la_contempt_complaint_next_steps.docx", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+  - la_contempt_complaint_attachment: ALDocument.using(title="Complaint for Contempt", filename="la_contempt_complaint.pdf", enabled=True, has_addendum=True, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[la_contempt_complaint_post_interview_instructions,la_contempt_complaint_attachment], filename="la_contempt_complaint.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+  - al_court_bundle: ALDocumentBundle.using(elements=[la_contempt_complaint_attachment], filename="la_contempt_complaint.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+---
+attachments:
+  - name: la contempt complaint post interview instructions
+    filename: Post-interview-instructions     
+    variable name: la_contempt_complaint_post_interview_instructions[i]        
+    skip undefined: True
+    docx template file: la_contempt_complaint_next_steps.docx
+  - name: la contempt complaint attachment
+    filename: la_contempt_complaint.pdf     
+    variable name: la_contempt_complaint_attachment[i]        
+    skip undefined: True
+    pdf template file: la_contempt_complaint.pdf
+    fields:
+      - "petitioners": ${ petitioners }
+      - "petitioners__1": ${ petitioners }
+      - "docket_number": ${ docket_number }
+      - "trial_court_division": ${ trial_court.division }
+      - "trial_court": ${ trial_court }
+      - "trial_court_county": ${ trial_court.address.county }
+      - "defendants": ${ defendants }
+      - "defendants__1": ${ defendants }
+      - "users": ${ users }
+      - "users1_address_county": ${ users[0].address.county }
+      - "users1_address_state": ${ users[0].address.state }
+      - "other_parties": ${ other_parties }
+      - "other_parties__1": ${ other_parties }
+      - "users1_name": ${ users[0] }
+      - "users1_address_line_one": ${ users[0].address.line_one() }
+      - "users1_address_line_two": ${ users[0].address.line_two() }
+      - "users1_phone_number": ${ users[0].phone_number }
+      - "other_parties1_address_line_one": ${ other_parties[0].address.line_one() }
+      - "other_parties1_address_line_two": ${ other_parties[0].address.line_two() }
+      - "other_parties_phone_number": ${ other_parties[0].phone_number }
+      - "decision_date": ${ decision_date }
+      - "decision_contents": ${la_contempt_complaint_attachment.safe_value("decision_contents")}
+      - "contempt_basis": ${la_contempt_complaint_attachment.safe_value("contempt_basis")}
+      - "users1_signature": ${ users[0].signature_if_final(i) }
+---
+code: |
+  la_contempt_complaint_attachment.overflow_fields["decision_contents"].overflow_trigger = 602
+  la_contempt_complaint_attachment.overflow_fields["decision_contents"].label = "Decision summary"
+  la_contempt_complaint_attachment.overflow_fields["contempt_basis"].overflow_trigger = 946
+  la_contempt_complaint_attachment.overflow_fields["contempt_basis"].label = "Reason"
+  la_contempt_complaint_attachment.overflow_fields.gathered = True
